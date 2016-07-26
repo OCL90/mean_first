@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="myApp">
+<head>
+	<meta charset="UTF-8">
+	<title>Survey</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.7/angular.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.7/angular-route.min.js"></script>
+	<script>
+		var myApp = angular.module('myApp', ['ngRoute']);
+
+		myApp.config(function($routeProvider){
+			$routeProvider
+			.when('/', {
+				templateUrl: '/partials/login.html'
+			})
+			.when('/dashboard', {
+				templateUrl: '/partials/dashboard.html'
+			})
+			.when('/create', {
+				templateUrl: '/partials/create.html'
+			})
+			.when('/poll/:id', {
+				templateUrl: '/partials/poll.html'
+			})
+			.otherwise('/')
+		})
+
+		myApp.factory('UserFactory', function($http, $location){
+			var obj = {};
+			obj.create = function(username){
+				var JSONpackage = {username: username};
+				$http.post('/users', JSONpackage).success(function(data){
+					obj.loggedInUser = data;
+					$location.path('/dashboard');
+				})
+			}
+			return obj;
+		})
+
+		myApp.factory('SurveyFactory', function($http, $location){
+			var obj = {};
+
+			obj.index = function(callback){
+				$http.get('/surveys').success(callback);
+			}
+
+			obj.destroy = function(surveyID, callback){
+				$http.delete('/surveys/' + surveyID).success(callback);
+			}
+
+			obj.create = function(survey){
+				$http.post('/surveys', survey).success(function(){
+					$location.path('/dashboard');
+				});
+			}
+
+			obj.show = function(surveyID, callback){
+				$http.get('/surveys/' + surveyID).success(callback);
+
+			}
+
+			obj.upvote = function(surveyID, index, callback){
+				var JSONpackage = {optionIndex: index};
+				$http.put('/surveys/' + surveyID, JSONpackage).success(callback)
+			}
+
+			return obj;
+		})
+
+
+		myApp.controller('UserController', function($scope, UserFactory){
+			$scope.create = function(){
+				console.log('creating user');
+				UserFactory.create($scope.username);
+				$scope.username = "";
+			}
+		})
+
+		myApp.controller('SurveyController', function($scope, SurveyFactory, UserFactory, $routeParams){
+			$scope.loggedInUser = UserFactory.loggedInUser;
+			
+			function getAll(){
+				SurveyFactory.index(function(surveys){
+					$scope.surveys = surveys;
+					console.log($scope.surveys);
+				})
+			}
+
+			getAll();
+
+			$scope.destroy = function(surveyID){
+				SurveyFactory.destroy(surveyID, getAll);
+			}
+
+			$scope.create = function(){
+				$scope.survey.userID = UserFactory.loggedInUser._id;
+				SurveyFactory.create($scope.survey);
+			}
+
+			SurveyFactory.show($routeParams.id, function(survey){
+				$scope.survey = survey;
+			})
+
+			$scope.upvote = function(surveyID, index){
+				SurveyFactory.upvote(surveyID, index, function(){
+					SurveyFactory.show(surveyID, function(survey){
+						$scope.survey = survey;
+						})
+				});
+			}
+		})
+
+
+	</script>
+
+</head>
+<body>
+	<div ng-view>
+		
+	</div>
+	
+</body>
+</html>

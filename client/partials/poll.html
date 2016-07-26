@@ -1,0 +1,16 @@
+<div ng-controller='SurveyController'>
+	<h3>{{survey.question}}</h3>
+	<p>Click to vote</p>
+	<table>
+		<tr>
+			<th>Option</th>
+			<th>Count</th>
+			<th>Action</th>
+		</tr>
+		<tr ng-repeat='o in survey.options'>
+			<td>{{o.value}}</td>
+			<td>{{o.upvote}}</td>
+			<td><button ng-click='upvote(survey._id, $index)'>Vote</button></td>
+		</tr>
+	</table>
+</div>
